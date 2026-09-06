@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오늘 주문 현황</title>
+<style>
+  :root{
+    --bg:#EEF2EE;
+    --surface:#FFFFFF;
+    --line:#DCE3DD;
+    --text:#20302A;
+    --muted:#5C6B63;
+    --brand:#3F6B54;
+    --brand-dark:#2E4F3E;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding:28px 16px 60px;
+  }
+  .wrap{max-width:640px;margin:0 auto;}
+  h1{font-size:20px;margin:0 0 4px;}
+  .date-line{color:var(--muted);font-size:14px;margin:0 0 18px;}
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:16px 18px;
+  }
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th, td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);}
+  th{color:var(--muted);font-weight:600;font-size:12px;}
+  td.num{text-align:right;}
+  th.num{text-align:right;}
+  tfoot td{font-weight:700;border-bottom:none;padding-top:12px;}
+  .empty{color:var(--muted);font-size:14px;padding:8px 0;}
+  .btn-row{
+    margin-top:22px;
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  button{
+    border:none;
+    padding:11px 22px;
+    border-radius:8px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  #backBtn{background:var(--brand);color:#fff;}
+  #backBtn:hover{background:var(--brand-dark);}
+  #exitBtn{background:var(--surface);border:1px solid var(--line);color:#8A3B3B;}
+  #exitBtn:hover{background:#FBEFEF;}
+  .exit-screen{
+    max-width:480px;
+    margin:80px auto 0;
+    text-align:center;
+    font-size:16px;
+    line-height:1.7;
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="pageBody">
+  <h1>오늘 주문 현황</h1>
+  <p class="date-line" id="dateLine"></p>
+  <div class="card" id="card">
+    <p class="empty">불러오는 중...</p>
+  </div>
+
+  <div class="btn-row">
+    <button id="backBtn" type="button">음료 주문 화면으로 돌아가기</button>
+    <button id="exitBtn" type="button">종료</button>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+const dateLine = document.getElementById('dateLine');
+const card = document.getElementById('card');
+const pageBody = document.getElementById('pageBody');
+
+function todayString(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
+async function loadOrders(){
+  dateLine.textContent = todayString() + ' 기준';
+  if(!API_URL || API_URL.includes('여기에')){
+    card.innerHTML = '<p class="empty">config.js 에 API_URL이 설정되어 있지 않습니다.</p>';
+    return;
+  }
+  try{
+    const res = await fetch(`${API_URL}?action=list&_=${Date.now()}`, {cache:'no-store'});
+    const data = await res.json();
+    const orders = data.orders || [];
+    if(orders.length === 0){
+      card.innerHTML = '<p class="empty">아직 주문한 팀원이 없습니다.</p>';
+      return;
+    }
+    let grand = 0;
+    const rows = orders.map(o=>{
+      const total = Number(o.total) || (Number(o.price)||0);
+      grand += total;
+      return `<tr><td>${o.member}</td><td>${o.menu}</td><td class="num">${total.toLocaleString()}원</td></tr>`;
+    }).join('');
+    card.innerHTML = `
+      <table>
+        <thead><tr><th>주문자</th><th>메뉴</th><th class="num">총액</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr><td colspan="2">합계</td><td class="num">${grand.toLocaleString()}원</td></tr></tfoot>
+      </table>`;
+  }catch(err){
+    console.error(err);
+    card.innerHTML = '<p class="empty">불러오기 실패: ' + err.message + '</p>';
+  }
+}
+
+document.getElementById('backBtn').addEventListener('click', ()=>{
+  window.location.href = 'index.html';
+});
+document.getElementById('exitBtn').addEventListener('click', ()=>{
+  pageBody.innerHTML = '<div class="exit-screen">오늘 주문을 마쳤습니다.<br>이 창을 닫아주세요.</div>';
+  try{ window.close(); }catch(e){}
+});
+
+loadOrders();
+</script>
+</body>
+</html>
