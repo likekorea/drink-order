@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>오늘의 음료 주문</title>
+<title>Tea Time 음료 주문 - 해외견적</title>
 <style>
   :root{
     --bg:#EEF2EE;
@@ -15,7 +15,6 @@
     --brand-dark:#2E4F3E;
     --amber:#B9752F;
     --amber-dark:#96591E;
-    --done-bg:#EAF3EC;
   }
   *{box-sizing:border-box;}
   body{
@@ -34,8 +33,10 @@
     margin-bottom:20px;
     flex-wrap:wrap;
   }
-  h1{font-size:22px;margin:0 0 4px;letter-spacing:-0.02em;}
-  .date-line{color:var(--muted);font-size:14px;margin:0;}
+  .title-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  h1{font-size:21px;margin:0;letter-spacing:-0.02em;}
+  .brand-logo{height:26px;width:auto;object-fit:contain;display:block;}
+  .date-line{color:var(--muted);font-size:14px;margin:4px 0 0;}
   #statusBtn{
     background:var(--surface);
     border:1px solid var(--line);
@@ -47,7 +48,7 @@
     cursor:pointer;
     white-space:nowrap;
   }
-  #statusBtn:hover{background:var(--done-bg);}
+  #statusBtn:hover{background:#F5F8F5;}
 
   .board{
     background:var(--surface);
@@ -57,7 +58,7 @@
   }
   .row{
     display:grid;
-    grid-template-columns:88px 1fr 64px 90px 96px 84px;
+    grid-template-columns:96px 1fr 96px 88px;
     align-items:center;
     gap:10px;
     padding:12px 16px;
@@ -72,7 +73,7 @@
     padding:10px 16px;
   }
   .name{font-weight:600;font-size:14px;}
-  select, input[type=number]{
+  select{
     width:100%;
     padding:8px 8px;
     border:1px solid var(--line);
@@ -81,8 +82,7 @@
     background:#fff;
     color:var(--text);
   }
-  .price, .total{font-size:14px;color:var(--muted);text-align:right;}
-  .total{color:var(--text);font-weight:600;}
+  .total{font-size:14px;color:var(--text);font-weight:600;text-align:right;}
   button.order-btn{
     border:none;
     padding:9px 0;
@@ -97,43 +97,52 @@
   button.order-btn:hover{background:var(--brand-dark);}
   button.order-btn.done{background:var(--amber);}
   button.order-btn.done:hover{background:var(--amber-dark);}
-  .row.done{background:var(--done-bg);}
 
-  #summary{
-    margin-top:22px;
+  .hint{color:var(--muted);font-size:12px;margin-top:10px;}
+
+  .bottom-bar{
+    margin-top:24px;
+    display:flex;
+    justify-content:center;
+  }
+  #exitBtn{
     background:var(--surface);
     border:1px solid var(--line);
-    border-radius:12px;
-    padding:16px 18px;
-    display:none;
+    color:#8A3B3B;
+    padding:11px 28px;
+    border-radius:8px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
   }
-  #summary h2{font-size:16px;margin:0 0 12px;}
-  table.sum-table{width:100%;border-collapse:collapse;font-size:14px;}
-  table.sum-table th, table.sum-table td{
-    text-align:left;
-    padding:8px 6px;
-    border-bottom:1px solid var(--line);
+  #exitBtn:hover{background:#FBEFEF;}
+
+  .exit-screen{
+    max-width:480px;
+    margin:80px auto 0;
+    text-align:center;
+    font-size:16px;
+    color:var(--text);
+    line-height:1.7;
   }
-  table.sum-table th{color:var(--muted);font-weight:600;font-size:12px;}
-  table.sum-table td.num{text-align:right;}
-  .grand{font-weight:700;}
-  .empty{color:var(--muted);font-size:14px;padding:12px 0;}
-  .hint{color:var(--muted);font-size:12px;margin-top:10px;}
 
   @media (max-width:640px){
     .row{grid-template-columns:1fr;gap:6px;padding:14px 14px;}
     .row.head{display:none;}
     .name{font-size:15px;}
-    .price, .total{text-align:left;}
+    .total{text-align:left;}
     .row > *{width:100%;}
   }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="pageBody">
   <header>
     <div>
-      <h1>오늘의 음료 주문</h1>
+      <div class="title-line">
+        <h1>Tea Time 음료 주문 - 해외견적</h1>
+        <img src="logo.png" alt="브랜드 로고" class="brand-logo" onerror="this.style.display='none'">
+      </div>
       <p class="date-line" id="dateLine"></p>
     </div>
     <button id="statusBtn" type="button">주문현황보기</button>
@@ -141,15 +150,14 @@
 
   <div class="board" id="board">
     <div class="row head">
-      <div>이름</div><div>메뉴</div><div>수량</div><div>단가</div><div>총액</div><div>주문</div>
+      <div>이름</div><div>메뉴</div><div>총액</div><div>주문</div>
     </div>
     <!-- 팀원별 행이 여기 채워집니다 -->
   </div>
   <p class="hint" id="loadHint">불러오는 중...</p>
 
-  <div id="summary">
-    <h2>오늘 주문 현황 <span id="sumDate"></span></h2>
-    <div id="sumBody"></div>
+  <div class="bottom-bar">
+    <button id="exitBtn" type="button">종료</button>
   </div>
 </div>
 
@@ -158,14 +166,16 @@
 const board = document.getElementById('board');
 const loadHint = document.getElementById('loadHint');
 const dateLine = document.getElementById('dateLine');
-const summaryBox = document.getElementById('summary');
-const sumBody = document.getElementById('sumBody');
-const sumDate = document.getElementById('sumDate');
 const statusBtn = document.getElementById('statusBtn');
+const exitBtn = document.getElementById('exitBtn');
+const pageBody = document.getElementById('pageBody');
+
+const ROW_COLORS = ['#FBEFE4','#E8F1FB','#F0EAF7','#E9F6EC','#FCEFF1','#EFF5EA','#EAF4F4','#FDF3E3'];
+const FIXED_QTY = 1; // 인당 주문 수량은 항상 1개로 고정
 
 let members = [];
-let menu = [];      // [{name, price}]
-let todayOrders = {}; // { 이름: {menu, qty, price} }
+let menu = [];      // [{name, price, category, temp}]
+let todayOrders = {}; // { 이름: {menu, price} }
 
 function todayString(){
   const d = new Date();
@@ -185,8 +195,8 @@ function parseMembers(text){
 
 function parseMenu(text){
   return text.split('\n').map(line=>line.trim()).filter(Boolean).map(line=>{
-    const [name, price] = line.split(',').map(s=>s.trim());
-    return {name, price:Number(price)||0};
+    const [name, price, category, temp] = line.split(',').map(s=>s.trim());
+    return {name, price:Number(price)||0, category: category||'기타', temp: temp||''};
   });
 }
 
@@ -199,7 +209,7 @@ async function fetchTodayOrders(){
     const data = await res.json();
     const map = {};
     (data.orders||[]).forEach(o=>{
-      map[o.member] = {menu:o.menu, qty:Number(o.qty), price:Number(o.price)};
+      map[o.member] = {menu:o.menu, price:Number(o.price)};
     });
     return map;
   }catch(err){
@@ -209,51 +219,63 @@ async function fetchTodayOrders(){
 }
 
 function buildMenuOptions(select, currentMenuName){
-  select.innerHTML = '<option value="">메뉴 선택</option>' +
-    menu.map(m=>`<option value="${m.name}" data-price="${m.price}" ${m.name===currentMenuName?'selected':''}>${m.name} (${m.price.toLocaleString()}원)</option>`).join('');
+  const order = [];
+  const groups = {};
+  menu.forEach(m=>{
+    if(!groups[m.category]){ groups[m.category]=[]; order.push(m.category); }
+    groups[m.category].push(m);
+  });
+
+  let html = '<option value="">메뉴 선택</option>';
+  order.forEach(cat=>{
+    html += `<optgroup label="${cat}">`;
+    groups[cat].forEach(m=>{
+      const priceLabel = m.price ? `${m.price.toLocaleString()}원` : '0원';
+      const tempSuffix = (m.temp && m.temp !== '기타') ? ` · ${m.temp}` : '';
+      const selected = m.name === currentMenuName ? 'selected' : '';
+      html += `<option value="${m.name}" data-price="${m.price}" ${selected}>${m.name} (${priceLabel})${tempSuffix}</option>`;
+    });
+    html += `</optgroup>`;
+  });
+  select.innerHTML = html;
 }
 
 function renderBoard(){
-  // 기존 행 제거 (헤더 제외)
   [...board.querySelectorAll('.row:not(.head)')].forEach(el=>el.remove());
 
-  members.forEach(name=>{
+  members.forEach((name, idx)=>{
     const existing = todayOrders[name];
     const row = document.createElement('div');
-    row.className = 'row' + (existing ? ' done' : '');
+    row.className = 'row';
+    row.style.background = ROW_COLORS[idx % ROW_COLORS.length];
     row.dataset.member = name;
 
     row.innerHTML = `
       <div class="name">${name}</div>
       <div><select class="menu-select"></select></div>
-      <div><input type="number" class="qty-input" min="1" value="${existing?existing.qty:1}"></div>
-      <div class="price">-</div>
       <div class="total">-</div>
       <div><button type="button" class="order-btn">${existing?'수정':'주문'}</button></div>
     `;
     board.appendChild(row);
 
-    if(existing){
-      row.querySelector('.order-btn').classList.add('done');
-    }
+    const btn = row.querySelector('.order-btn');
+    if(existing) btn.classList.add('done');
 
     const select = row.querySelector('.menu-select');
     buildMenuOptions(select, existing ? existing.menu : '');
     updateRowCalc(row);
 
     select.addEventListener('change', ()=>updateRowCalc(row));
-    row.querySelector('.qty-input').addEventListener('input', ()=>updateRowCalc(row));
-    row.querySelector('.order-btn').addEventListener('click', ()=>submitOrder(row, name));
+    btn.addEventListener('click', ()=>submitOrder(row, name));
   });
 }
 
 function updateRowCalc(row){
   const select = row.querySelector('.menu-select');
   const opt = select.selectedOptions[0];
-  const price = opt && opt.dataset.price ? Number(opt.dataset.price) : 0;
-  const qty = Number(row.querySelector('.qty-input').value) || 0;
-  row.querySelector('.price').textContent = price ? price.toLocaleString()+'원' : '-';
-  row.querySelector('.total').textContent = price ? (price*qty).toLocaleString()+'원' : '-';
+  const hasSelection = !!(opt && opt.value);
+  const price = hasSelection ? Number(opt.dataset.price)||0 : null;
+  row.querySelector('.total').textContent = hasSelection ? price.toLocaleString()+'원' : '-';
 }
 
 async function submitOrder(row, member){
@@ -264,7 +286,6 @@ async function submitOrder(row, member){
     return;
   }
   const price = Number(opt.dataset.price)||0;
-  const qty = Number(row.querySelector('.qty-input').value)||1;
   const btn = row.querySelector('.order-btn');
 
   if(!API_URL || API_URL.includes('여기에')){
@@ -278,7 +299,7 @@ async function submitOrder(row, member){
     const res = await fetch(API_URL, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({member, menu:opt.value, qty, price})
+      body: JSON.stringify({member, menu:opt.value, qty:FIXED_QTY, price})
     });
     const text = await res.text();
     let result;
@@ -288,8 +309,7 @@ async function submitOrder(row, member){
     if(!result || result.result !== 'ok'){
       throw new Error('서버가 저장 실패를 반환했습니다: ' + text.slice(0,200));
     }
-    todayOrders[member] = {menu:opt.value, qty, price};
-    row.classList.add('done');
+    todayOrders[member] = {menu:opt.value, price};
     btn.classList.add('done');
     btn.textContent = '수정';
   }catch(err){
@@ -301,42 +321,15 @@ async function submitOrder(row, member){
   }
 }
 
-async function showSummary(){
-  const willShow = summaryBox.style.display !== 'block';
-  if(!willShow){
-    summaryBox.style.display = 'none';
-    statusBtn.textContent = '주문현황보기';
-    return;
-  }
-  statusBtn.textContent = '숨기기';
-  summaryBox.style.display = 'block';
-  sumDate.textContent = '('+todayString()+')';
-  sumBody.innerHTML = '<p class="empty">불러오는 중...</p>';
-
-  const latest = await fetchTodayOrders();
-  todayOrders = latest;
-
-  const rows = Object.entries(latest);
-  if(rows.length === 0){
-    sumBody.innerHTML = '<p class="empty">아직 주문한 팀원이 없습니다.</p>';
-    return;
-  }
-  let grand = 0;
-  const trs = rows.map(([member, o])=>{
-    const total = o.qty * o.price;
-    grand += total;
-    return `<tr><td>${member}</td><td>${o.menu}</td><td class="num">${o.qty}</td><td class="num">${o.price.toLocaleString()}원</td><td class="num">${total.toLocaleString()}원</td></tr>`;
-  }).join('');
-
-  sumBody.innerHTML = `
-    <table class="sum-table">
-      <thead><tr><th>주문자</th><th>메뉴</th><th class="num">수량</th><th class="num">단가</th><th class="num">총액</th></tr></thead>
-      <tbody>${trs}</tbody>
-      <tfoot><tr class="grand"><td colspan="4">합계</td><td class="num">${grand.toLocaleString()}원</td></tr></tfoot>
-    </table>`;
+function showExitScreen(){
+  pageBody.innerHTML = `<div class="exit-screen">오늘 주문을 마쳤습니다.<br>이 창을 닫아주세요.</div>`;
+  try{ window.close(); }catch(e){}
 }
 
-statusBtn.addEventListener('click', showSummary);
+statusBtn.addEventListener('click', ()=>{
+  window.open('status.html', '_blank', 'noopener');
+});
+exitBtn.addEventListener('click', showExitScreen);
 
 (async function init(){
   dateLine.textContent = todayString() + ' 기준';
