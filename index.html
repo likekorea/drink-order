@@ -195,7 +195,7 @@ async function fetchTodayOrders(){
     return {};
   }
   try{
-    const res = await fetch(`${API_URL}?action=list`, {cache:'no-store'});
+    const res = await fetch(`${API_URL}?action=list&_=${Date.now()}`, {cache:'no-store'});
     const data = await res.json();
     const map = {};
     (data.orders||[]).forEach(o=>{
@@ -232,6 +232,10 @@ function renderBoard(){
       <div><button type="button" class="order-btn">${existing?'수정':'주문'}</button></div>
     `;
     board.appendChild(row);
+
+    if(existing){
+      row.querySelector('.order-btn').classList.add('done');
+    }
 
     const select = row.querySelector('.menu-select');
     buildMenuOptions(select, existing ? existing.menu : '');
@@ -271,17 +275,26 @@ async function submitOrder(row, member){
   btn.disabled = true;
   btn.textContent = '저장 중...';
   try{
-    await fetch(API_URL, {
+    const res = await fetch(API_URL, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify({member, menu:opt.value, qty, price})
     });
+    const text = await res.text();
+    let result;
+    try{ result = JSON.parse(text); }catch(parseErr){
+      throw new Error('서버 응답을 해석할 수 없습니다: ' + text.slice(0,200));
+    }
+    if(!result || result.result !== 'ok'){
+      throw new Error('서버가 저장 실패를 반환했습니다: ' + text.slice(0,200));
+    }
     todayOrders[member] = {menu:opt.value, qty, price};
     row.classList.add('done');
+    btn.classList.add('done');
     btn.textContent = '수정';
   }catch(err){
-    console.error(err);
-    alert('주문 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+    console.error('주문 저장 오류:', err);
+    alert('주문 저장에 실패했습니다.\n' + err.message);
     btn.textContent = todayOrders[member] ? '수정' : '주문';
   }finally{
     btn.disabled = false;
