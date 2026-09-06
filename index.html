@@ -331,8 +331,26 @@ statusBtn.addEventListener('click', ()=>{
 });
 exitBtn.addEventListener('click', showExitScreen);
 
+async function logVisit(page){
+  if(!API_URL || API_URL.includes('여기에')) return;
+  try{
+    const geo = await fetch('https://ipapi.co/json/').then(r=>r.json()).catch(()=>({}));
+    const params = new URLSearchParams({
+      action:'log',
+      page,
+      ip: geo.ip || '',
+      country: geo.country_name || '',
+      ua: navigator.userAgent
+    });
+    fetch(`${API_URL}?${params.toString()}`, {cache:'no-store'});
+  }catch(err){
+    console.error('접속 로그 실패', err);
+  }
+}
+
 (async function init(){
   dateLine.textContent = todayString() + ' 기준';
+  logVisit('index');
   try{
     const [membersText, menuText] = await Promise.all([
       loadTextFile('members.txt'),
