@@ -38,9 +38,9 @@
   .brand-logo{height:26px;width:auto;object-fit:contain;display:block;}
   .date-line{color:var(--muted);font-size:14px;margin:4px 0 0;}
   #statusBtn{
-    background:var(--surface);
-    border:1px solid var(--line);
-    color:var(--brand-dark);
+    background:#3F5B7A;
+    border:none;
+    color:#fff;
     padding:10px 16px;
     border-radius:8px;
     font-size:14px;
@@ -48,7 +48,7 @@
     cursor:pointer;
     white-space:nowrap;
   }
-  #statusBtn:hover{background:#F5F8F5;}
+  #statusBtn:hover{background:#31465F;}
 
   .board{
     background:var(--surface);
@@ -170,7 +170,7 @@ const statusBtn = document.getElementById('statusBtn');
 const exitBtn = document.getElementById('exitBtn');
 const pageBody = document.getElementById('pageBody');
 
-const ROW_COLORS = ['#FFFFFF','#F3F7F3']; // 홀수행/짝수행 2색만 교차 사용
+const ROW_COLORS = ['#FBF0DC','#E3EEFA']; // 홀수행 아이보리 / 짝수행 하늘색
 const FIXED_QTY = 1; // 인당 주문 수량은 항상 1개로 고정
 
 let members = [];
