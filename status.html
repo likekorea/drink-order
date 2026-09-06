@@ -24,9 +24,18 @@
     padding:28px 16px 60px;
   }
   .wrap{max-width:640px;margin:0 auto;}
-  h1{font-size:20px;margin:0 0 4px;}
+  header{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:20px;
+    flex-wrap:wrap;
+  }
+  h1{font-size:20px;margin:0;}
   h2{font-size:15px;margin:0 0 12px;}
-  .date-line{color:var(--muted);font-size:14px;margin:0 0 18px;}
+  .date-line{color:var(--muted);font-size:14px;margin:4px 0 0;}
+  .header-btns{display:flex;gap:8px;flex-wrap:wrap;}
   .card{
     background:var(--surface);
     border:1px solid var(--line);
@@ -40,41 +49,56 @@
   td.num, th.num{text-align:right;}
   tfoot td{font-weight:700;border-bottom:none;padding-top:12px;}
   .empty{color:var(--muted);font-size:14px;padding:8px 0;}
-  .btn-row{
-    margin-top:22px;
-    display:flex;
-    gap:10px;
-    justify-content:center;
-    flex-wrap:wrap;
+  .pending-list{display:flex;flex-wrap:wrap;gap:8px;}
+  .pending-chip{
+    background:#FBEFEA;
+    color:#8A4B2E;
+    border:1px solid #F0D9CC;
+    padding:6px 12px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:600;
   }
+  .all-done{color:var(--brand-dark);font-size:14px;font-weight:600;}
   button{
     border:none;
-    padding:11px 20px;
+    padding:9px 16px;
     border-radius:8px;
-    font-size:14px;
+    font-size:13px;
     font-weight:600;
     cursor:pointer;
+    white-space:nowrap;
   }
   #backBtn{background:var(--brand);color:#fff;}
   #backBtn:hover{background:var(--brand-dark);}
   #captureBtn{background:#3F5B7A;color:#fff;}
   #captureBtn:hover{background:#31465F;}
-  #exitBtn{background:var(--surface);border:1px solid var(--line);color:#8A3B3B;}
-  #exitBtn:hover{background:#FBEFEF;}
-  .exit-screen{
-    max-width:480px;
-    margin:80px auto 0;
-    text-align:center;
-    font-size:16px;
-    line-height:1.7;
+
+  @media (max-width:520px){
+    header{flex-direction:column;align-items:flex-start;}
+    .header-btns{width:100%;}
+    .header-btns button{flex:1;}
   }
 </style>
 </head>
 <body>
-<div class="wrap" id="pageBody">
+<div class="wrap">
   <div id="captureArea">
-    <h1>오늘 주문 현황</h1>
-    <p class="date-line" id="dateLine"></p>
+    <header>
+      <div>
+        <h1>오늘 주문 현황</h1>
+        <p class="date-line" id="dateLine"></p>
+      </div>
+      <div class="header-btns">
+        <button id="backBtn" type="button">음료 주문 화면으로 돌아가기</button>
+        <button id="captureBtn" type="button">주문내역 캡쳐</button>
+      </div>
+    </header>
+
+    <div class="card" id="pendingCard">
+      <h2>아직 주문하지 않은 팀원</h2>
+      <div id="pendingBody"><p class="empty">불러오는 중...</p></div>
+    </div>
 
     <div class="card" id="orderCard">
       <h2>주문자별 내역</h2>
@@ -86,26 +110,40 @@
       <div id="menuBody"><p class="empty">불러오는 중...</p></div>
     </div>
   </div>
-
-  <div class="btn-row">
-    <button id="backBtn" type="button">음료 주문 화면으로 돌아가기</button>
-    <button id="captureBtn" type="button">주문내역 캡쳐</button>
-    <button id="exitBtn" type="button">종료</button>
-  </div>
 </div>
 
 <script src="config.js"></script>
 <script>
 const dateLine = document.getElementById('dateLine');
+const pendingBody = document.getElementById('pendingBody');
 const orderBody = document.getElementById('orderBody');
 const menuBody = document.getElementById('menuBody');
-const pageBody = document.getElementById('pageBody');
 const captureArea = document.getElementById('captureArea');
 
 function todayString(){
   const d = new Date();
   const p = n => String(n).padStart(2,'0');
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
+async function loadTextFile(path){
+  const res = await fetch(path, {cache:'no-store'});
+  if(!res.ok) throw new Error(path + ' 을(를) 불러올 수 없습니다.');
+  return await res.text();
+}
+
+function parseMembers(text){
+  return text.split(',').map(s=>s.trim()).filter(Boolean);
+}
+
+function renderPending(members, orders){
+  const orderedSet = new Set(orders.map(o=>o.member));
+  const pending = members.filter(m=>!orderedSet.has(m));
+  if(pending.length === 0){
+    pendingBody.innerHTML = '<p class="all-done">모든 팀원이 주문을 완료했습니다.</p>';
+    return;
+  }
+  pendingBody.innerHTML = `<div class="pending-list">${pending.map(m=>`<span class="pending-chip">${m}</span>`).join('')}</div>`;
 }
 
 function renderOrderTable(orders){
@@ -128,7 +166,6 @@ function renderOrderTable(orders){
 }
 
 function renderMenuSummary(orders){
-  // 실제 구매가 필요한 메뉴만 집계 (주문안함/0원 항목 제외)
   const map = {};
   const order = [];
   orders.forEach(o=>{
@@ -162,18 +199,25 @@ function renderMenuSummary(orders){
 async function loadOrders(){
   dateLine.textContent = todayString() + ' 기준';
   if(!API_URL || API_URL.includes('여기에')){
+    pendingBody.innerHTML = '';
     orderBody.innerHTML = '<p class="empty">config.js 에 API_URL이 설정되어 있지 않습니다.</p>';
     menuBody.innerHTML = '';
     return;
   }
   try{
-    const res = await fetch(`${API_URL}?action=list&_=${Date.now()}`, {cache:'no-store'});
+    const [membersText, res] = await Promise.all([
+      loadTextFile('members.txt'),
+      fetch(`${API_URL}?action=list&_=${Date.now()}`, {cache:'no-store'})
+    ]);
+    const members = parseMembers(membersText);
     const data = await res.json();
     const orders = data.orders || [];
+    renderPending(members, orders);
     renderOrderTable(orders);
     renderMenuSummary(orders);
   }catch(err){
     console.error(err);
+    pendingBody.innerHTML = '';
     orderBody.innerHTML = '<p class="empty">불러오기 실패: ' + err.message + '</p>';
     menuBody.innerHTML = '';
   }
@@ -203,11 +247,6 @@ document.getElementById('captureBtn').addEventListener('click', async ()=>{
     btn.disabled = false;
     btn.textContent = original;
   }
-});
-
-document.getElementById('exitBtn').addEventListener('click', ()=>{
-  pageBody.innerHTML = '<div class="exit-screen">오늘 주문을 마쳤습니다.<br>이 창을 닫아주세요.</div>';
-  try{ window.close(); }catch(e){}
 });
 
 loadOrders();
